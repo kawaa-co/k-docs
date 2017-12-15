@@ -1,239 +1,126 @@
 ---
-title: API Reference
+title: Kawaa API Reference
 
 language_tabs: # must be one of https://git.io/vQNgJ
   - shell
-  - ruby
-  - python
-  - javascript
 
 toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
   - <a href='https://github.com/tripit/slate'>Documentation Powered by Slate</a>
 
 includes:
-  - errors
 
 search: true
+
 ---
 
-# Introduction
+# Overview
 
-Welcome to the Kittn API! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
+Welcome to the Kawaa API!
 
-We have language bindings in Shell, Ruby, and Python! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
+You can use our [REST](https://en.wikipedia.org/wiki/Representational_state_transfer) API to access Kawaa API endpoints. 
+JSON is returned by all API responses, including errors.
 
-This example API documentation page was created with [Slate](https://github.com/tripit/slate). Feel free to edit it and use it as a base for your own API's documentation.
+All requests should be done over **HTTPS**, otherwise they will fail.
 
 # Authentication
 
-> To authorize, use this code:
+Kawaa uses two types of keys to allow access to the API: `X-Api-Key` and `X-Auth-Key`.
 
-```ruby
-require 'kittn'
+## X-Api-Key
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-```
+> Example Request
 
 ```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here"
-  -H "Authorization: meowmeowmeow"
+curl "https://api.kawaa.co/meets"
+  -H "X-Api-Key: YOUR_API_KEY"
 ```
 
-```javascript
-const kittn = require('kittn');
+> Make sure to replace `YOUR_API_KEY` with your API key.
 
-let api = kittn.authorize('meowmeowmeow');
-```
+You can get a new API key by contacting [cto@kawaa.co](mailto:cto@kawaa.co).
 
-> Make sure to replace `meowmeowmeow` with your API key.
+We expect for the API key to be included in all API requests to the server in a header that looks like the following:
 
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
-
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
-
-`Authorization: meowmeowmeow`
+`X-Api-Key: YOUR_API_KEY`
 
 <aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
+You must replace <code>YOUR_API_KEY</code> with your API key.
 </aside>
 
-# Kittens
+## X-Auth-Key
 
-## Get All Kittens
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get()
-```
+> Example request exposing sensitive info
 
 ```shell
-curl "http://example.com/api/kittens"
-  -H "Authorization: meowmeowmeow"
+curl "https://api.kawaa.co/account"
+  -H "X-Api-Key: YOUR_API_KEY"
+  -H "X-Auth-Key: YOUR_AUTH_KEY"
+```
+Some endpoints require stricter authetification because they expose some sensitive information or they give access to writable resources.
+In that case you should use `X-Auth-Key` in your requests' headers alongside with your `X-Api-Key`. Your `X-Auth-Key` is personal and shouldn't be communicated anywhere.
+It's created on registeration a new account on Kawaa. You can obtain it by:
+
+`curl -X POST https://api.kawaa.co/account/login
+	-d "email=YOUR_EMAIL@FOO.COM&password=YOUR_PASSWORD" -H "X-Api-Key: YOUR_API_KEY" `
+
+<aside class="notice">
+You must replace <code>YOUR_API_KEY</code> with your API key, <code>YOUR_EMAIL@FOO.COM</code> and <code>YOUR_PASSWORD</code> with the email and password you used when creating your account on Kawaa.
+</aside>
+
+# Pagination
+
+> Example Request
+
+```shell
+curl "https://api.kawaa.co/meets"
+  -H "X-Api-Key: YOUR_API_KEY"
 ```
 
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let kittens = api.kittens.get();
-```
-
-> The above command returns JSON structured like this:
+> Example Response
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
-  },
-  {
-    "id": 2,
-    "name": "Max",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
-  }
-]
+{
+	"meta": {
+		"limit": 20,
+		"next": "?limit=20&offset=20",
+		"offset": 0,
+		"previous": null,
+		"total": 3150
+	},
+	"meets": [
+		# meets here
+	]
+}
 ```
 
-This endpoint retrieves all kittens.
+All GET endpoints which return a collection support cursor based pagination with pagination information inside a `meta` object.
+It contains the following fields:
 
-### HTTP Request
+- `limit`: A limit on the number of retrieved items (for this call).
+- `offset`: Index of the first item in the retrieved portion. That index is relative to the whole collection.
+	- _If `offset` is **0**, it means that the first item in the retrived portion is at **first** position in the whole collection._
+- `total`: Total number of items in the collection.
+- `next`: There's no need to construct by yourself the query params to retrieve the next portion of items. The API returns for you a string to be appended to your next call.
+If it's `null`, there're no more items to be retrieved.
+	- _Taking the example on the right, our next call should be `https://api.kawaa.co?limit=20&offset=20`_
+- `previous`: The same as `next` but for previous items.
 
-`GET http://example.com/api/kittens`
+## Requests with pagination
 
-### Query Parameters
+> Example Request
 
-Parameter | Default | Description
+```shell
+curl "https://api.kawaa.co/meets?limit=20&offset=40"
+  -H "X-Api-Key: YOUR_API_KEY"
+```
+
+All GET endpoints supporting pagination accept two **optional** parameters:
+
+Parameter | Default | Description (see above)
 --------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
+limit | 20 | Limit of the items to be retrieved
+offset | 0 | Position of the item from which we start counting
 
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
+# Endpoints
 
-## Get a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```shell
-curl "http://example.com/api/kittens/2"
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.get(2);
-```
-
-> The above command returns JSON structured like this:
-
-```json
-{
-  "id": 2,
-  "name": "Max",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
-}
-```
-
-This endpoint retrieves a specific kitten.
-
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
-
-### HTTP Request
-
-`GET http://example.com/kittens/<ID>`
-
-### URL Parameters
-
-Parameter | Description
---------- | -----------
-ID | The ID of the kitten to retrieve
-
-## Delete a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.delete(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.delete(2)
-```
-
-```shell
-curl "http://example.com/api/kittens/2"
-  -X DELETE
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.delete(2);
-```
-
-> The above command returns JSON structured like this:
-
-```json
-{
-  "id": 2,
-  "deleted" : ":("
-}
-```
-
-This endpoint retrieves a specific kitten.
-
-### HTTP Request
-
-`DELETE http://example.com/kittens/<ID>`
-
-### URL Parameters
-
-Parameter | Description
---------- | -----------
-ID | The ID of the kitten to delete
-
+All available endpoints are documented and accessible [here](https:/api.kawaa.co/documentation).
