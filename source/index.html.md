@@ -121,6 +121,166 @@ Parameter | Default | Description (see above)
 limit | 20 | Limit of the items to be retrieved
 offset | 0 | Position of the item from which we start counting
 
-# Endpoints
+# Endpoints Groups
 
-All available endpoints are documented and accessible [here](https:/api.kawaa.co/documentation).
+## CREATE GROUP
+
+> Example Request
+
+```shell
+curl -X POST "https://api.kawaa.co/groups" \
+  -d '{
+    "name": "My Group",
+    "description": "some description",
+    "tags": [ 123 ],
+    "avatar": 234,
+    "extra_infos": [
+        { "name": "website", "title": { "fr": "Site web", "en": "Website" }, "value": "www.kawaa.co" },
+        { "name": "opening_hours", "title": { "fr": "Horaires d'\''overture", "en": "Opening hours" }, "value": "Tous les jours entre 10h et 22h" }
+    ],
+    "new_location": {
+      "name": "Sensespace",
+      "address": "11 Rue Biscornet",
+      "city": "Paris",
+      "lat": 48.8504762,
+      "lng": 2.3696405,
+      "zip_code": "75012",
+      "country": "FR"
+    },
+    "status": "published"
+  }' \
+  -H "X-Api-Key: API_KEY" \
+  -H "X-Auth-Key: YOUR_AUTH_KEY" \
+  -H "Content-Type: application/json"
+```
+
+> Make sure to replace `API_KEY` with your API key and `YOUR_AUTH_KEY` with the key obtained on `POST /account/login`.
+
+**Endpoint**
+
+`POST /groups` 
+
+**Parameters**
+
+| Name | Located in | Description | Required | Type |
+| ---- | ---------- | ----------- | -------- | ---- |
+| X-Auth-Key | header | Auth key(see [above](#authentication)). | Yes | string |
+| name | body | Group's name. | Yes | string |
+| description | body | Group's description. | No | string |
+| administrator | body | ID of an user, to be assigned as group's administrator. If not given the current user becomes group's admin. | No | integer |
+| tags | body | Array of tags' IDs. | No | array[integer] |
+| avatar | body | Resource's ID, to be set as group's avatar (obtained from [`POST /resources`](#create-resource)). | No | integer |
+| new_avatar | body | Avatar of the group. | No | file |
+| photos | body | Resources' IDs, to be set as group's photos (obtained from [`POST /resources`](#create-resource)). | No | array[integer] |
+| extra_infos | body | Array of INFO objects used to better describe the group (see in **NOTES** below)| No | array[INFO] |
+| place | body | *true* if is a place or *false* if not. | No | boolean |
+| new_location | body | LOCATION object used to localize the group (see in **NOTES** below). | No | LOCATION |
+| category | body | If the group is a place, it could have one of the following categories: *bar, cafe, restaurant, museum, hotel, tiers, coworking_space or other* | No | string |
+| status | body | Group's status could be: *published or draft*. | No | string |
+
+**Responses**
+
+| Code | Description |
+| ---- | ----------- |
+| 201 | Create a group. |
+
+**NOTES**
+
+- mutually exclusive params:
+  - `avatar` and `new_avatar`
+
+- *LOCATION* object:
+
+| Name | Description | Required | Type |
+| ---- | ----------- | -------- | ---- |
+| name | name of the location | No | string |
+| lat | latitude of the location | Yes | float |
+| lng | longitude of the location | Yes | float |
+| area | range of the influenced area of the location (in km) | No | string |
+| address | address of the location | No | string |
+| city | city of the location | No | string |
+| zip_code | zip code of the location | No | string |
+| country | 2-letter code of the country of the location | Yes | string |
+
+- *INFO* object:
+
+| Name | Description | Required | Type |
+| ---- | ----------- | -------- | ---- |
+| name | unique identifier of the field (for ex: *telephone*, *website*, *contact_person*) | No | string |
+| title | Field's title to be desplayed in different languages (see below) | No | TRANSLATION |
+| value | Field's value (for ex: *0912345565*, *mysite.com*, *John Doe*) | No | string |
+
+- *TRANSLATION* is a key/value object. The key is a 2-letter code representing a language (for ex: *fr*, *en*) and the value is the corresponding translation. For ex: `{ 'fr': 'Numéro de téléphone', 'en': 'Phone number' }`
+
+## CREATE GROUP LINK
+
+**Description**
+
+Create a relation between two groups (origin and target). The origin group is the one initiating the relation. Depending on the type of the link there could be a transfer of meets between both groups. For ex. if one organizes a meet in the origin group, the meet is automatically linked to the target group.
+
+**Endpoint**
+
+`POST /groups/:id/links` 
+
+**Parameters**
+
+| Name | Located in | Description | Required | Type |
+| ---- | ---------- | ----------- | -------- | ---- |
+| X-Auth-Key | header | Auth key(see [above](#authentication)). | Yes | string |
+| id | path | ID of the origin group. | Yes | integer |
+| target_id | body | ID of the target group. | Yes | integer |
+| link | body | Type of the link. It could be *hierachical* (there's a transfer of meets from origin to target) or *neutral* (there's no trasnfer) | No | string |
+| flag | body | Flag used to regroup different kinds of group_links (for ex: *partner*, *sponsor*). | No | string |
+| symbol | body | String represantation of a symbol used to visaully differentiate the kinds of group_links (most often on the maps). | No | string |
+| color | body | Hex represantation of a color used to visaully differentiate the kinds of group_links (most often on the maps). | No | string |
+
+**Responses**
+
+| Code | Description |
+| ---- | ----------- |
+| 201 | Create a group link. |
+
+# Endpoints Resources
+
+## CREATE RESOURCE
+
+**Description**
+
+Upload photos and avatars.
+
+> Example Request
+
+```shell
+curl -X POST "https://api.kawaa.co/resources" \
+  -d '{
+    "title": "My avatar",
+    "slug": "https://kawaa.s3.eu-central-1.amazonaws.com/api/uploads/resource/file/23/140520_75GaiteLyrique_2.jpg",
+    "category": "group_avatar"
+  }' \
+  -H "X-Api-Key: API_KEY" \
+  -H "X-Auth-Key: YOUR_AUTH_KEY" \
+  -H "Content-Type: application/json"
+```
+
+> Make sure to replace `API_KEY` with your API key and `YOUR_AUTH_KEY` with the key obtained on `POST /account/login`.
+
+**Endpoint**
+
+`POST /resources` 
+
+**Parameters**
+
+| Name | Located in | Description | Required | Type |
+| ---- | ---------- | ----------- | -------- | ---- |
+| X-Auth-Key | header | Auth key(see [above](#authentication)). | Yes | string |
+| title | body | Resource's title. | No | string |
+| file | body | File | No | file |
+| slug | body | Resource's external url. | No | string |
+| category | body | Resource's category. It could be one of the following: *self_kawaa, user_avatar, group_avatar, group_photo, meet_photo, comment_upload, animation_cover, animation_photo, animation_video, animation_doc, post_photo* | No | string |
+
+**NOTES**
+
+- mutually exclusive params:
+  - `file` and `slug`
+
+All other available endpoints are documented and accessible [here](https:/api.kawaa.co/documentation).
