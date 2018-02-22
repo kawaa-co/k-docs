@@ -233,12 +233,17 @@ Create a relation between two groups (origin and target). The origin group is th
 | flag | body | Flag used to regroup different kinds of group_links (for ex: *partner*, *sponsor*). | No | string |
 | symbol | body | String represantation of a symbol used to visaully differentiate the kinds of group_links (most often on the maps). | No | string |
 | color | body | Hex represantation of a color used to visaully differentiate the kinds of group_links (most often on the maps). | No | string |
+| title | body | See **NOTES**. | No | TRANSLATION |
 
 **Responses**
 
 | Code | Description |
 | ---- | ----------- |
 | 201 | Create a group link. |
+
+**NOTES**
+
+- *TRANSLATION* is a key/value object. The key is a 2-letter code representing a language (for ex: *fr*, *en*) and the value is the corresponding translation. For ex: `{ 'fr': 'Numéro de téléphone', 'en': 'Phone number' }`
 
 # Endpoints Resources
 
